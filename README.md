@@ -20,17 +20,19 @@ yarn add parent-worker-bridge
 ### Worker
 
 ```javascript
-const { parentPort } = require('node:worker_threads');
 const { ParentWorkerBridge } = require('parent-worker-bridge');
-const workerBridge = new ParentWorkerBridge(parentPort);
+const { parentPort } = require('worker_threads');
+const parentBridge = new ParentWorkerBridge(parentPort);
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-workerBridge.registerFunction('testing', async (n) => {
+parentBridge.registerFunction('testing', async (n) => {
     await delay(1000);
     if (n === 4) throw new Error('my message');
     return n;
 });
+
+parentBridge.say("Hello from worker!");
 ```
 
 ### Parent (Main Thread)
@@ -41,6 +43,10 @@ const { Worker } = require('worker_threads');
 const path = require('path');
 
 const workerBridge = new ParentWorkerBridge(new Worker(path.join(__dirname, 'worker.js')));
+
+workerBridge.registerFunction('say', async (msg) => {
+    console.log('Worker says:', msg); // Worker says: Hello from worker!
+});
 
 workerBridge.testing(1).then((result) => {
     console.log('1 Result:', result); // 1 Result: 1

@@ -28,7 +28,7 @@ class ParentWorkerBridge {
             this._messageHandler(message);
         });
 
-        new Proxy(this, {
+        return new Proxy(this, {
             get: (target: any, functionName: string | symbol, receiver: any) => {
                 if (typeof target[functionName] === 'undefined') {
                     return (...args: any[]) => this._sendRunFunction({ functionName, args });

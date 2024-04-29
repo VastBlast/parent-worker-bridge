@@ -1,6 +1,6 @@
 {
   "name": "parent-worker-bridge",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Simple bridge for running functions between a parent and a worker thread using promises.",
   "main": "dist/index.js",
   "scripts": {
