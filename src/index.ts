@@ -3,6 +3,8 @@ import { randomId } from "./helpers";
 interface MessageController {
     on(event: string, callback: (message: any) => void): void;
     postMessage(message: any): void;
+    removeListener?(event: string, callback: (message: any) => void): void;
+    off?(event: string, callback: (message: any) => void): void;
 }
 
 enum MessageTypes {
@@ -16,6 +18,7 @@ class ParentWorkerBridge {
     private _messageController: MessageController;
     private pendingFunctions: { [id: string]: { resolve: Function; reject: Function } };
     private functions: { [name: string]: Function };
+    private _boundMessageHandler: (message: any) => void;
 
     [functionName: string]: GenericFunction | any;  // Index signature for dynamic method names
 
@@ -24,9 +27,10 @@ class ParentWorkerBridge {
         this.pendingFunctions = {};
         this.functions = {};
 
-        this._messageController.on('message', (message) => {
+        this._boundMessageHandler = (message: any) => {
             this._messageHandler(message);
-        });
+        };
+        this._messageController.on('message', this._boundMessageHandler);
 
         return new Proxy(this, {
             get: (target: any, functionName: string | symbol, receiver: any) => {
@@ -112,6 +116,17 @@ class ParentWorkerBridge {
 
     public deleteFunction(name: string): void {
         delete this.functions[name];
+    }
+
+    public destroy(): void {
+        if (typeof this._messageController.removeListener === 'function') {
+            this._messageController.removeListener('message', this._boundMessageHandler);
+        } else if (typeof (this._messageController as any).off === 'function') {
+            (this._messageController as any).off('message', this._boundMessageHandler);
+        }
+
+        this.pendingFunctions = {};
+        this.functions = {};
     }
 }
 
